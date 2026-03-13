@@ -195,9 +195,14 @@ async function getInitConfig(configFile: string, subConfig: {
     api_site: {
       ffzy: { api: 'https://cj.ffzyapi.com/api.php/provide/vod', name: '非凡资源' },
       lzi: { api: 'https://cj.lziapi.com/api.php/provide/vod', name: '量子资源' },
-      suoni: { api: 'https://suoniapi.com/api.php/provide/vod', name: '索尼资源' },
-      wolong: { api: 'https://wolongzy.cc/api.php/provide/vod', name: '卧龙资源' },
-      ikun: { api: 'https://ikunzyapi.com/api.php/provide/vod', name: 'ikun资源' }
+      suoni: { api: 'https://suonizy.com/api.php/provide/vod', name: '索尼资源' },
+      wolong: { api: 'https://wolongzy.net/api.php/provide/vod', name: '卧龙资源' },
+      ikun: { api: 'https://ikunzyapi.com/api.php/provide/vod', name: 'ikun资源' },
+      bfzy: { api: 'https://bfzyapi.com/api.php/provide/vod', name: '暴风资源' },
+      hongniu: { api: 'https://www.hongniuzy2.com/api.php/provide/vod', name: '红牛资源' },
+      baidu: { api: 'https://api.apibdzy.com/api.php/provide/vod', name: '百度资源' },
+      kuaiche: { api: 'https://www.kczyapi.com/api.php/provide/vod', name: '快车资源' },
+      lili: { api: 'https://api.lilizyapi.com/api.php/provide/vod', name: '1080P资源' }
     },
     custom_category: [
       { name: '热门', type: 'movie', query: '热门' },
@@ -206,7 +211,11 @@ async function getInitConfig(configFile: string, subConfig: {
       { name: '韩剧', type: 'tv', query: '韩剧' },
       { name: '国产剧', type: 'tv', query: '国产剧' },
       { name: '日本动画', type: 'tv', query: '日本动画' }
-    ]
+    ],
+    lives: {
+      fanmingming: { name: 'FanMingming (IPv6)', url: 'https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/ipv6.m3u' },
+      yuechan: { name: 'YueChan (IPTV)', url: 'https://raw.githubusercontent.com/YueChan/Live/main/IPTV.m3u' }
+    }
   }, null, 2);
 
   const finalConfigFile = configFile || defaultConfigFile;
