@@ -2,18 +2,20 @@
 
 import { AdminConfig } from './admin.types';
 import { KvrocksStorage } from './kvrocks.db';
+import { MemoryStorage } from './memory.db';
 import { RedisStorage } from './redis.db';
 import { Favorite, IStorage, PlayRecord, SkipConfig } from './types';
 import { UpstashRedisStorage } from './upstash.db';
 
-// storage type 常量: 'localstorage' | 'redis' | 'upstash'，默认 'localstorage'
+// storage type 常量: 'localstorage' | 'redis' | 'upstash' | 'kvrocks' | 'memory'，默认 'memory'
 const STORAGE_TYPE =
   (process.env.NEXT_PUBLIC_STORAGE_TYPE as
     | 'localstorage'
     | 'redis'
     | 'upstash'
     | 'kvrocks'
-    | undefined) || 'localstorage';
+    | 'memory'
+    | undefined) || 'memory';
 
 // 创建存储实例
 function createStorage(): IStorage {
@@ -24,20 +26,23 @@ function createStorage(): IStorage {
       return new UpstashRedisStorage();
     case 'kvrocks':
       return new KvrocksStorage();
+    case 'memory':
     case 'localstorage':
     default:
-      return null as unknown as IStorage;
+      return new MemoryStorage();
   }
 }
 
-// 单例存储实例
-let storageInstance: IStorage | null = null;
+// 使用 globalThis 保持 HMR 期间的单例
+const globalForDb = globalThis as unknown as {
+  storageInstance: IStorage | undefined;
+};
 
 function getStorage(): IStorage {
-  if (!storageInstance) {
-    storageInstance = createStorage();
+  if (!globalForDb.storageInstance) {
+    globalForDb.storageInstance = createStorage();
   }
-  return storageInstance;
+  return globalForDb.storageInstance;
 }
 
 // 工具函数：生成存储key

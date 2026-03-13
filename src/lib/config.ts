@@ -54,7 +54,6 @@ export const API_CONFIG = {
 };
 
 // 在模块加载时根据环境决定配置来源
-let cachedConfig: AdminConfig;
 
 
 // 从配置文件补充管理员配置
@@ -191,14 +190,34 @@ async function getInitConfig(configFile: string, subConfig: {
     AutoUpdate: false,
     LastCheck: "",
   }): Promise<AdminConfig> {
+  const defaultConfigFile = JSON.stringify({
+    cache_time: 7200,
+    api_site: {
+      ffzy: { api: 'https://cj.ffzyapi.com/api.php/provide/vod', name: '非凡资源' },
+      lzi: { api: 'https://cj.lziapi.com/api.php/provide/vod', name: '量子资源' },
+      suoni: { api: 'https://suoniapi.com/api.php/provide/vod', name: '索尼资源' },
+      wolong: { api: 'https://wolongzy.cc/api.php/provide/vod', name: '卧龙资源' },
+      ikun: { api: 'https://ikunzyapi.com/api.php/provide/vod', name: 'ikun资源' }
+    },
+    custom_category: [
+      { name: '热门', type: 'movie', query: '热门' },
+      { name: '冷门佳片', type: 'movie', query: '冷门佳片' },
+      { name: '美剧', type: 'tv', query: '美剧' },
+      { name: '韩剧', type: 'tv', query: '韩剧' },
+      { name: '国产剧', type: 'tv', query: '国产剧' },
+      { name: '日本动画', type: 'tv', query: '日本动画' }
+    ]
+  }, null, 2);
+
+  const finalConfigFile = configFile || defaultConfigFile;
   let cfgFile: ConfigFileStruct;
   try {
-    cfgFile = JSON.parse(configFile) as ConfigFileStruct;
+    cfgFile = JSON.parse(finalConfigFile) as ConfigFileStruct;
   } catch (e) {
     cfgFile = {} as ConfigFileStruct;
   }
   const adminConfig: AdminConfig = {
-    ConfigFile: configFile,
+    ConfigFile: finalConfigFile,
     ConfigSubscribtion: subConfig,
     SiteConfig: {
       SiteName: process.env.NEXT_PUBLIC_SITE_NAME || 'MoonTV',
@@ -290,10 +309,15 @@ async function getInitConfig(configFile: string, subConfig: {
   return adminConfig;
 }
 
+// 使用 globalThis 保持 HMR 期间的缓存一致
+const globalForConfig = globalThis as unknown as {
+  cachedConfig: AdminConfig | undefined;
+};
+
 export async function getConfig(): Promise<AdminConfig> {
   // 直接使用内存缓存
-  if (cachedConfig) {
-    return cachedConfig;
+  if (globalForConfig.cachedConfig) {
+    return globalForConfig.cachedConfig;
   }
 
   // 读 db
@@ -304,14 +328,22 @@ export async function getConfig(): Promise<AdminConfig> {
     console.error('获取管理员配置失败:', e);
   }
 
+  let isNew = false;
   // db 中无配置，执行一次初始化
   if (!adminConfig) {
     adminConfig = await getInitConfig("");
+    isNew = true;
   }
+
   adminConfig = configSelfCheck(adminConfig);
-  cachedConfig = adminConfig;
-  db.saveAdminConfig(cachedConfig);
-  return cachedConfig;
+  globalForConfig.cachedConfig = adminConfig;
+
+  // 只有如果是新初始化的，或者数据库里完全没东西，才执行保存
+  if (isNew) {
+    await db.saveAdminConfig(adminConfig);
+  }
+
+  return adminConfig;
 }
 
 export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
@@ -406,7 +438,7 @@ export async function resetConfig() {
     originConfig = {} as AdminConfig;
   }
   const adminConfig = await getInitConfig(originConfig.ConfigFile, originConfig.ConfigSubscribtion);
-  cachedConfig = adminConfig;
+  globalForConfig.cachedConfig = adminConfig;
   await db.saveAdminConfig(adminConfig);
 
   return;
@@ -468,5 +500,5 @@ export async function getAvailableApiSites(user?: string): Promise<ApiSite[]> {
 }
 
 export async function setCachedConfig(config: AdminConfig) {
-  cachedConfig = config;
+  globalForConfig.cachedConfig = config;
 }

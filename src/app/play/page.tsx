@@ -1319,7 +1319,7 @@ function PlayPageClient() {
         autoOrientation: true,
         lock: true,
         moreVideoAttr: {
-          crossOrigin: 'anonymous',
+          // crossOrigin: 'anonymous', // 移除以避免触发部分 CDN 的 CORS 检查导致 403
         },
         // HLS 支持配置
         customType: {
@@ -1448,6 +1448,34 @@ function PlayPageClient() {
                 handleSkipConfigChange(newConfig);
                 return `${formatTime(currentTime)}`;
               }
+            },
+          },
+          {
+            html: '播放代理',
+            icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+            tooltip: '解决403限制',
+            switch: false, // 默认根据域名初始化
+            onSwitch: function (item: any) {
+              const newVal = !item.switch;
+              // 重新加载播放器以应用代理
+              if (artPlayerRef.current) {
+                resumeTimeRef.current = artPlayerRef.current.currentTime;
+                // 我们通过更新 URL 触发 useEffect 重新创建播放器
+                const originalUrl = artPlayerRef.current.url;
+                let newUrl = originalUrl;
+                if (newVal) {
+                  if (!originalUrl.includes('/api/proxy/m3u8')) {
+                    newUrl = `/api/proxy/m3u8?url=${encodeURIComponent(originalUrl)}`;
+                  }
+                } else {
+                  if (originalUrl.includes('/api/proxy/m3u8')) {
+                    const searchParams = new URLSearchParams(originalUrl.split('?')[1]);
+                    newUrl = searchParams.get('url') || originalUrl;
+                  }
+                }
+                setVideoUrl(newUrl);
+              }
+              return newVal;
             },
           },
           {
